@@ -33,7 +33,7 @@ private:
     static const int BACKLOG_QUEUE_SIZE = 50;
     static const size_t BUFFER_SIZE = 10 * 4096;
 
-    const std::string FIFO_NAME = "/Users/treggit/fifo";
+    const std::string FIFO_NAME = "/tmp/os-net-fifo";
 };
 
 

@@ -17,6 +17,7 @@
 #include "../file_descriptor/file_descriptor.h"
 #include <sys/un.h>
 #include <fcntl.h>
+#include "../utils/utils.h"
 
 server_exception::server_exception(std::string const& msg, bool call_strerror)
         : std::runtime_error(call_strerror ? (msg + ": " + strerror(errno)) : msg) {}
@@ -87,30 +88,25 @@ void server::handle_connection(int client_desc) {
 }
 
 std::string server::read(int desc) {
-    std::vector<char> buffer(BUFFER_SIZE);
-    ssize_t was_read = ::read(desc, buffer.data(), BUFFER_SIZE);
-
-    if (was_read == -1) {
-        throw server_exception("Couldn't read request from socket " + std::to_string(desc), false);
-    }
-
-    if (was_read == 0) {
+    std::string message = utils::read(desc);
+    if (message.length() == 0) {
         throw server_exception("Client disconnected", false);
     }
-
-    return std::string(buffer.data());
+    log("Read message successfully: " + message);
+    return message;
 }
 
 void server::send(int desc, std::string const& message) {
-    size_t message_len = strlen(message.data());
-    ssize_t was_send = ::write(desc, message.data(), message_len);
+    log("Sending message " + message + "...");
+    size_t was_sent = utils::send(desc, message);
 
-    if (was_send == -1) {
-        throw server_exception("Couldn't send respond to " + std::to_string(desc), false);
-    }
-
-    if (was_send == 0) {
+    if (was_sent == 0) {
         throw server_exception("Client disconnected", false);
+    }
+    if (was_sent != message.size()) {
+        log("Not full message was sent");
+    } else {
+        log("Send message successfully");
     }
 }
 

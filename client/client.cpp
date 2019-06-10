@@ -15,6 +15,7 @@
 #include <sys/un.h>
 #include "../fifo/fifo.h"
 #include <fcntl.h>
+#include "../utils/utils.h"
 
 client_exception::client_exception(std::string const& msg, bool call_strerror)
         : std::runtime_error(call_strerror ? (msg + ": " + strerror(errno)) : msg) {}
@@ -73,27 +74,28 @@ void client::run() {
 
 
 std::string client::read(int desc) {
-    std::vector<char> buffer(BUFFER_SIZE);
-    ssize_t was_read = ::read(desc, buffer.data(), BUFFER_SIZE);
-
-    if (was_read == 0) {
+    std::string message = utils::read(desc);
+    if (message.size() == 0) {
         alive = false;
-    }
-    if (was_read == -1) {
-        throw client_exception("Couldn't read respond from socket " + std::to_string(desc));
+        throw client_exception("Failed to receive full message");
     }
 
-    return std::string(buffer.data());
+    log("Read message successfully: " + message);
+    return message;
 }
 
 void client::send(int desc, std::string const& message) {
-    ssize_t was_send = ::write(desc, message.data(), message.size());
+    log("Sending message " + message + "...");
+    size_t was_sent = utils::send(desc, message);
 
-    if (was_send == 0) {
+    if (was_sent == 0) {
         alive = false;
+        throw client_exception("Failed to send request");
     }
-    if (was_send == -1) {
-        throw client_exception("Couldn't send request to socket " + std::to_string(desc));
+    if (was_sent != message.size()) {
+        log("Not full message was sent");
+    } else {
+        log("Send message successfully");
     }
 }
 
