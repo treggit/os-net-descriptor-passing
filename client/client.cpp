@@ -73,24 +73,20 @@ int client::get_fd() {
 }
 
 void client::run() {
-    alive = true;
 
-    int in = get_fd();
-    int out = get_fd();
+    file_descriptor in = get_fd();
+    file_descriptor out = get_fd();
 
-    while (alive) {
-        std::string request;
-        getline(std::cin, request);
+    std::string request;
+    getline(std::cin, request);
 
-        if(!std::cin || request == "exit") {
-            alive = false;
-            break;
-        }
+    if(!std::cin || request == "exit") {
+        return;
+    }
 
-        if (!request.empty()) {
-            send(out, request);
-            std::cout << read(in) << std::endl;
-        }
+    if (!request.empty()) {
+        send(*out, request);
+        std::cout << read(*in) << std::endl;
     }
 }
 

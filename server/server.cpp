@@ -17,6 +17,7 @@
 #include "../file_descriptor/file_descriptor.h"
 #include <sys/un.h>
 #include <fcntl.h>
+#include <sys/termios.h>
 #include "../utils/utils.h"
 
 server_exception::server_exception(std::string const& msg, bool call_strerror)
@@ -103,10 +104,8 @@ void server::handle_connection(int client_desc) {
     send_fd(client_desc, channel.get_in().second);
 
     log("Waiting for requests");
-
-    while (true) {
-        send(channel.get_out().second, read(channel.get_in().first));
-    }
+    
+    send(channel.get_out().second, read(channel.get_in().first));
 }
 
 std::string server::read(int desc) {
