@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 struct file_descriptor {
+    file_descriptor();
     file_descriptor(int descriptor);
     file_descriptor(file_descriptor&& other) noexcept;
     file_descriptor& operator=(file_descriptor&& other) noexcept;

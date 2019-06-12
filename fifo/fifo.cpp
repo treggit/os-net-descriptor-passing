@@ -8,55 +8,31 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <cerrno>
+#include "../file_descriptor/file_descriptor.h"
 
-fifo::fifo(std::string const& pathname) : in_name(pathname + ".in"), out_name(pathname + ".out") {
-    state &= (mkfifo(in_name.c_str(), MODE) != -1 || errno == EEXIST);
-    state &= (mkfifo(out_name.c_str(), MODE) != -1 || errno == EEXIST);
-}
 
-fifo::~fifo() {
-    if (in_fd != -1) {
-        close(in_fd);
+fifo::fifo() {
+    int fds[2];
+    status &= (::pipe(fds) != -1);
+    if (status) {
+        in.first = fds[0];
+        in.second = fds[1];
     }
-
-    if (out_fd != -1) {
-        close(out_fd);
+    status &= (::pipe(fds) != -1);
+    if (status) {
+        out.first = fds[0];
+        out.second = fds[1];
     }
-
-    unlink(in_name.c_str());
-    unlink(out_name.c_str());
 }
 
-bool fifo::open() {
-    if (in_fd == -1) {
-        in_fd = ::open(in_name.c_str(), O_RDONLY);
-    }
-
-    if (out_fd == -1) {
-        out_fd = ::open(out_name.c_str(), O_WRONLY);
-    }
-
-    return (in_fd != -1 && out_fd != -1);
+std::pair<int, int> fifo::get_in() {
+    return {*in.first, *in.second};
 }
 
-bool fifo::valid() const {
-    return state;
+std::pair<int, int> fifo::get_out() {
+    return {*out.first, *out.second};
 }
 
-int fifo::get_in_descriptor() {
-    open();
-    return in_fd;
-}
-
-int fifo::get_out_descriptor() {
-    open();
-    return out_fd;
-}
-
-std::string fifo::get_in_name() {
-    return in_name;
-}
-
-std::string fifo::get_out_name() {
-    return out_name;
+bool fifo::valid() {
+    return status;
 }

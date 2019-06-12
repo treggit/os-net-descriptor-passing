@@ -49,6 +49,34 @@ server::server(std::string const& path) : socket_fd(socket(AF_UNIX, SOCK_STREAM,
     log("Server was deployed successfully");
 }
 
+void server::send_fd(int client, int fd) {
+    msghdr msg = {};
+    char buf[CMSG_SPACE(sizeof(fd))];
+    memset(buf, 0, sizeof(buf));
+
+    iovec io{};
+    io.iov_base = (void *) "";
+    io.iov_len = 1;
+
+    msg.msg_iov = &io;
+    msg.msg_iovlen = 1;
+    msg.msg_control = buf;
+    msg.msg_controllen = sizeof(buf);
+
+    cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+
+    memmove(CMSG_DATA(cmsg), &fd, sizeof(fd));
+
+    msg.msg_controllen = cmsg->cmsg_len;
+
+    if (sendmsg(client, &msg, 0) == -1) {
+        throw server_exception("Couldn't pass file descriptor");
+    }
+}
+
 void server::run() {
     log("Waiting for connections");
 
@@ -66,24 +94,18 @@ void server::run() {
 
 void server::handle_connection(int client_desc) {
     log("Establishing FIFO...");
-    fifo channel(FIFO_NAME);
+    fifo channel;
     if (!channel.valid()) {
-        throw server_exception("Couldn't create fifo channel");
+        throw server_exception("Couldn't create fifo channel", false);
     }
 
-    send(client_desc, channel.get_in_name() + "\n" + channel.get_out_name());
-
-    if (!channel.open()) {
-        throw server_exception("Couldn't open fifo channel");
-    }
-
-    int in = channel.get_in_descriptor();
-    int out = channel.get_out_descriptor();
+    send_fd(client_desc, channel.get_out().first);
+    send_fd(client_desc, channel.get_in().second);
 
     log("Waiting for requests");
 
     while (true) {
-        send(out, read(in));
+        send(channel.get_out().second, read(channel.get_in().first));
     }
 }
 

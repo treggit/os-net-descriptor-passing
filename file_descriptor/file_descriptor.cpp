@@ -9,6 +9,8 @@
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 
+file_descriptor::file_descriptor() = default;
+
 file_descriptor::file_descriptor(int descriptor) : descriptor(descriptor) {}
 
 file_descriptor::~file_descriptor() {

@@ -27,6 +27,7 @@ private:
     std::string read(int desc);
     void send(int desc, std::string const& message);
     void handle_connection(int client_desc);
+    void send_fd(int client, int fd);
 
     file_descriptor socket_fd;
 

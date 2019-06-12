@@ -45,16 +45,38 @@ void client::log(std::string const& msg) {
     std::cerr << "client: " << msg << std::endl;
 }
 
+int client::get_fd() {
+    msghdr msg{};
+
+    char buffer[512];
+    iovec io{};
+    io.iov_base = buffer;
+    io.iov_len = sizeof(buffer);
+
+    msg.msg_iov = &io;
+    msg.msg_iovlen = 1;
+
+    char msg_control_buf[512];
+    msg.msg_control = msg_control_buf;
+    msg.msg_controllen = sizeof(msg_control_buf);
+
+    if (recvmsg(*socket_fd, &msg, 0) == -1) {
+        throw client_exception("Couldn't receive file descriptor");
+    }
+
+    cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
+
+    int fd;
+    memcpy(&fd, CMSG_DATA(cmsg), sizeof(fd));
+
+    return fd;
+}
+
 void client::run() {
     alive = true;
-    std::string fifo_names = read(*socket_fd);
 
-    file_descriptor out = open(fifo_names.substr(0, fifo_names.find_first_of('\n')).c_str(), O_WRONLY);
-    file_descriptor in = open(fifo_names.substr(fifo_names.find_first_of('\n') + 1).c_str(), O_RDONLY);
-
-    if (!in.valid() || !out.valid()) {
-        throw client_exception("Couldn't open fifo channel");
-    }
+    int in = get_fd();
+    int out = get_fd();
 
     while (alive) {
         std::string request;
@@ -66,8 +88,8 @@ void client::run() {
         }
 
         if (!request.empty()) {
-            send(*out, request);
-            std::cout << read(*in) << std::endl;
+            send(out, request);
+            std::cout << read(in) << std::endl;
         }
     }
 }

@@ -22,6 +22,7 @@ public:
 private:
     std::string read(int desc);
     void send(int desc, std::string const& message);
+    int get_fd();
 
     file_descriptor socket_fd = -1;
 

@@ -8,26 +8,21 @@
 #include <sys/stat.h>
 #include <string>
 #include <sys/types.h>
+#include "../file_descriptor/file_descriptor.h"
+#include <utility>
+
 
 struct fifo {
-    explicit fifo(std::string const& pathname);
-    ~fifo();
+    fifo();
 
-    bool valid() const;
-    int get_in_descriptor();
-    int get_out_descriptor();
-    std::string get_in_name();
-    std::string get_out_name();
-    bool open();
-
-    static const mode_t MODE = S_IRUSR | S_IWUSR | S_IWGRP;
+    std::pair<int, int> get_in();
+    std::pair<int, int> get_out();
+    bool valid();
 
 private:
-    std::string in_name, out_name;
-    int in_fd = -1;
-    int out_fd = -1;
+    bool status = true;
+    struct std::pair<file_descriptor, file_descriptor> in, out;
 
-    bool state = true;
 };
 
 
